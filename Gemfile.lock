@@ -1,0 +1,22 @@
+PATH
+  remote: .
+  specs:
+    erb-linter (0.0.1)
+      rake
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (5.14.4)
+    rake (13.0.3)
+
+PLATFORMS
+  x86_64-darwin-20
+
+DEPENDENCIES
+  erb-linter!
+  minitest (~> 5.0)
+  rake (~> 13.0)
+
+BUNDLED WITH
+   2.2.3
