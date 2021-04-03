@@ -45,13 +45,9 @@ Add this line to your application's Gemfile:
 gem 'erb-linter'
 ```
 
-And then execute:
+And add `linthtml` to yarn:
 
-    $ bundle install
-
-Or install it yourself as:
-
-    $ gem install erb-linter
+    $ yarn add --dev @linthtml/linthtml
 
 ## Usage
 
@@ -81,7 +77,9 @@ ERB::Linter::Task.new do |task|
 end
 ```
 
-Add a `linthtml` configuration:
+### Example linthtml configuration
+
+And then add a `linthtml` configuration like this:
 
 `.linthtmlrc.js`
 
