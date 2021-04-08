@@ -33,7 +33,7 @@ module ERB::Linter::Converter
 
       # catch all <% %> inside tags id <p <%= test %>> , not inside attrs
       replace_line.scan(/(<%.*?%>)/m).each do |match|
-        replace_line.sub!(match[0], " data-erb-#{i += 1}=\"#{CGI.escapeHTML(match[0])}\"")
+        replace_line.sub!(match[0], "data-erb-#{i += 1}=\"#{CGI.escapeHTML(match[0])}\"")
       end
 
       source.sub!(line, replace_line)

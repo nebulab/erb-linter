@@ -42,13 +42,17 @@ describe ERB::Linter do
       converted_html(
         <<~ERB
           <div>
-            <span data-foo="<%= :asdf %>"></span>
+            <span data-foo="<%= :foo %>" <%= :bar if bar %>></span>
+            <span <%= :foo if foo %> <%= :bar if bar %>></span>
+            <span data-foo="<%= "foo" %>" <%= "bar" if bar %>></span>
           </div>
         ERB
       ).must_equal(
         <<~HTML
           <div>
-            <span data-erb-data-foo="&lt;%= :asdf %&gt;"></span>
+            <span data-erb-data-foo="&lt;%= :foo %&gt;" data-erb-0="&lt;%= :bar if bar %&gt;"></span>
+            <span data-erb-0="&lt;%= :foo if foo %&gt;" data-erb-1="&lt;%= :bar if bar %&gt;"></span>
+            <span data-erb-data-foo="&lt;%= &quot;foo&quot; %&gt;" data-erb-0="&lt;%= &quot;bar&quot; if bar %&gt;"></span>
           </div>
         HTML
       )
