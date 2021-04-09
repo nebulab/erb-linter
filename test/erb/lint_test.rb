@@ -42,17 +42,57 @@ describe ERB::Linter do
       converted_html(
         <<~ERB
           <div>
+            <span data-action="foo->#bar" <%= :bar if bar %>></span>
             <span data-foo="<%= :foo %>" <%= :bar if bar %>></span>
             <span <%= :foo if foo %> <%= :bar if bar %>></span>
             <span data-foo="<%= "foo" %>" <%= "bar" if bar %>></span>
+            <input <%= :foo if foo %> <%= :bar if bar %>/>
+
+              <span
+            data-foo="<%= "foo" %>"
+                   autocomplete
+
+                  <%= "bar" if bar %>
+           data-foo="bar><!'"
+           ></span>
+           <test
+             data-controller="foo"
+             data-foo-configuration-value='{
+               "bar0": true,
+               "bar1": true,
+               "bar2": false,
+               "bar3": false,
+               "bar4": <%= @bar %>
+             }'
+           >
           </div>
         ERB
       ).must_equal(
         <<~HTML
           <div>
+            <span data-action="foo->#bar" data-erb-0="&lt;%= :bar if bar %&gt;"></span>
             <span data-erb-data-foo="&lt;%= :foo %&gt;" data-erb-0="&lt;%= :bar if bar %&gt;"></span>
             <span data-erb-0="&lt;%= :foo if foo %&gt;" data-erb-1="&lt;%= :bar if bar %&gt;"></span>
             <span data-erb-data-foo="&lt;%= &quot;foo&quot; %&gt;" data-erb-0="&lt;%= &quot;bar&quot; if bar %&gt;"></span>
+            <input data-erb-0="&lt;%= :foo if foo %&gt;" data-erb-1="&lt;%= :bar if bar %&gt;"/>
+
+              <span
+            data-erb-data-foo="&lt;%= &quot;foo&quot; %&gt;"
+                   autocomplete
+
+                  data-erb-0="&lt;%= &quot;bar&quot; if bar %&gt;"
+           data-foo="bar><!'"
+           ></span>
+           <test
+             data-controller="foo"
+             data-erb-data-foo-configuration-value='{
+               &quot;bar0&quot;: true,
+               &quot;bar1&quot;: true,
+               &quot;bar2&quot;: false,
+               &quot;bar3&quot;: false,
+               &quot;bar4&quot;: &lt;%= @bar %&gt;
+             }'
+           >
           </div>
         HTML
       )

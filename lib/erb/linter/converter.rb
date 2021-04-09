@@ -2,42 +2,81 @@
 
 require "cgi"
 require "ripper"
+require 'securerandom'
+require 'strscan'
 
 module ERB::Linter::Converter
   extend self
 
-  # Credit to the Deface gem
+  # https://stackoverflow.com/a/317081
+  ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
+  UNQUOTED_VALUE = ATTR_NAME
+  UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
+  SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*')}
+  DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*")}
+
+  ERB_TAG = %r{<%.*?%>}
+  HTML_ATTR = %r{\s+#{SINGLE_QUOTE_ATTR}|\s+#{DOUBLE_QUOTE_ATTR}|\s+#{UNQUOTED_ATTR}|\s+#{ATTR_NAME}}
+  HTML_TAG = %r{(<\w+)((?:#{HTML_ATTR})*)(\s*)(/>|>)}m
+
+  # (credit goes to the Deface gem for the original implementation)
   def erb2html(source)
     source = +source
 
-    # all opening html tags that contain <% %> blocks
-    source.scan(/<\w+[^<>]+(?:<%.*?%>[^<>]*)+/m).each do |line|
-      # regexs to catch <% %> inside attributes id="<% something %>" - with double, single or no quotes
-      erb_attrs_regexs = [
-        /([\w-]+)(\s?=\s?)(")([^"]*<%.*?%>[^"]*)/m,
-        /([\w-]+)(\s?=\s?)(')([^']*<%.*?%>[^']*)'/m,
-        /([\w-]+)(\s?=\s?)()(<%.*?%>)(?:\s|>|\z)/m,
-      ]
+    # encode all erb tags so that the HTML looks valid
+    erb_tags = {}
+    source.gsub!(ERB_TAG) do |tag|
+      uid = ["ERB_", SecureRandom.uuid].join.delete('-')
+      erb_tags[uid] = tag
+      uid
+    end
 
-      # rubocop:disable Linter/ShadowingOuterLocalVariable
-      replace_line = erb_attrs_regexs.inject(line.clone) do |replace_line, regex|
-        replace_line = line.scan(regex).inject(replace_line) do |replace_line, match|
-          replace_line.sub("#{match[0]}#{match[1]}#{match[2]}#{match[3]}#{match[2]}") { "data-erb-#{match[0]}=\"#{CGI.escapeHTML(match[3])}\"" }
-        end
+    erb_tags_matcher = Regexp.union(erb_tags.keys)
 
-        replace_line
-      end
-      # rubocop:enable Linter/ShadowingOuterLocalVariable
+    # transform/escape all the erb-attributes first
+    source.gsub!(HTML_TAG).each do |match|
+      line = Regexp.last_match.to_a[1..-1]
+      tag = [line[0], line[2]+line[3]]
+
+      # scan each attribute into an array
+      attr_scanner = StringScanner.new(line[1])
+      attributes = []
+      attributes << (attr_scanner.scan(HTML_ATTR) or raise "Can't scan: #{attr_scanner.string}") until attr_scanner.eos?
+      # attributes.compact!
 
       i = -1
+      attributes.map! do |attribute|
+        if attribute.match?(erb_tags_matcher)
+          space, attribute = attribute.scan(/\A(\s+)(.*)\z/m).flatten
+          attribute.gsub!(erb_tags_matcher, erb_tags)
 
-      # catch all <% %> inside tags id <p <%= test %>> , not inside attrs
-      replace_line.scan(/(<%.*?%>)/m).each do |match|
-        replace_line.sub!(match[0], "data-erb-#{i += 1}=\"#{CGI.escapeHTML(match[0])}\"")
+          attribute =
+            case attribute
+            when /\A#{ERB_TAG}\z/
+              %{data-erb-#{i += 1}="#{CGI.escapeHTML(attribute)}"}
+            when /\A#{ATTR_NAME}=/
+              name, value = attribute.split("=", 2)
+              quote = '"'
+              if value.match(/\A['"]/)
+                quote = value[0]
+                value = value[1...-1]
+              end
+              %{data-erb-#{name}=#{quote}#{CGI.escapeHTML(value)}#{quote}}
+            else
+              raise "Don't know how to process attribute: #{attribute.inspect}"
+            end
+
+          "#{space}#{attribute}"
+        else
+          attribute
+        end
       end
 
-      source.sub!(line, replace_line)
+      [tag[0], *attributes, tag[1]].join
     end
+
+    # restore the encoded erb tags
+    source.gsub!(erb_tags_matcher, erb_tags)
 
     # replaces all <% %> not inside opening html tags
     replacements = [
