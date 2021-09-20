@@ -23,6 +23,8 @@ class ERB::Linter::Task < Rake::TaskLib
 
   def run
     success = ERB::Linter::Checker.check_files(glob, root: root, tmpdir: tmpdir)
+    puts 'Hint: Line numbers reflect compiled temp files, not necessarily the original line numbers.'
+    puts "      The compiled files are stored in this directory: #{tmpdir}"
 
     exit(success)
   rescue ERB::Linter::Error => error
