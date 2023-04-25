@@ -44,6 +44,7 @@ describe ERB::Linter do
           <div>
             <span data-action="foo->#bar" <%= :bar if bar %>></span>
             <span data-foo="<%= :foo %>" <%= :bar if bar %>></span>
+            <span data-<% identifier %>="bar" data-<% identifier %>-foo="<%= 'bar' %>"></span>
             <span <%= :foo if foo %> <%= :bar if bar %>></span>
             <span data-foo="<%= "foo" %>" <%= "bar" if bar %>></span>
             <input <%= :foo if foo %> <%= :bar if bar %>/>
@@ -72,6 +73,7 @@ describe ERB::Linter do
           <div>
             <span data-action="foo->#bar" data-erb-0="&lt;%= :bar if bar %&gt;"></span>
             <span data-erb-data-foo="&lt;%= :foo %&gt;" data-erb-0="&lt;%= :bar if bar %&gt;"></span>
+            <span data-erb-data-<erb silent erb-code=\" identifier \"></erb>=\"bar\" data-erb-data-<erb silent erb-code=\" identifier \"></erb>-foo=\"&lt;%= &#39;bar&#39; %&gt;\"></span>
             <span data-erb-0="&lt;%= :foo if foo %&gt;" data-erb-1="&lt;%= :bar if bar %&gt;"></span>
             <span data-erb-data-foo="&lt;%= &quot;foo&quot; %&gt;" data-erb-0="&lt;%= &quot;bar&quot; if bar %&gt;"></span>
             <input data-erb-0="&lt;%= :foo if foo %&gt;" data-erb-1="&lt;%= :bar if bar %&gt;"/>

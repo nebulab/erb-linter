@@ -48,14 +48,13 @@ module ERB::Linter::Converter
       attributes.map! do |attribute|
         if attribute.match?(erb_tags_matcher)
           space, attribute = attribute.scan(/\A(\s+)(.*)\z/m).flatten
-          attribute.gsub!(erb_tags_matcher, erb_tags)
 
           attribute =
-            case attribute
-            when /\A#{ERB_TAG}\z/
-              %{data-erb-#{i += 1}="#{CGI.escapeHTML(attribute)}"}
-            when /\A#{ATTR_NAME}=/
-              name, value = attribute.split("=", 2)
+            case
+            when /\A#{ERB_TAG}\z/ === attribute.gsub(erb_tags_matcher, erb_tags)
+              %{data-erb-#{i += 1}="#{CGI.escapeHTML(attribute.gsub(erb_tags_matcher, erb_tags))}"}
+            when /\A#{ATTR_NAME}=/ === attribute
+              name, value = attribute.split("=", 2).map { _1.gsub(erb_tags_matcher, erb_tags) }
               quote = '"'
               if value.match(/\A['"]/)
                 quote = value[0]
@@ -63,7 +62,7 @@ module ERB::Linter::Converter
               end
               %{data-erb-#{name}=#{quote}#{CGI.escapeHTML(value)}#{quote}}
             else
-              raise "Don't know how to process attribute: #{attribute.inspect}"
+              raise "Don't know how to process attribute: #{attribute.gsub(erb_tags_matcher, erb_tags).inspect}"
             end
 
           "#{space}#{attribute}"
